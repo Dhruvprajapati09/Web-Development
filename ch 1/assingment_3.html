@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h3>Q1. Recreate the following table using HTML:</h3>
+<table border="1">
+    <caption><strong>Student Information</strong></caption>
+    <thead>
+        <tr>
+            <th rowspan="2">Info</th>
+            <th rowspan="2">Name</th>
+            <th colspan="3">Address</th>
+        </tr>
+        <tr>
+            <th>City</th>
+            <th colspan="1">House</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td rowspan="3"></td>
+            <td>A</td>
+            <td>Delhi</td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>B</td>
+            <td>Mumbai</td>
+            <td>2</td>
+        </tr>
+        <tr>
+            <td>C</td>
+            <td>Kolkata</td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>D</td>
+            <td>Pune</td>
+            <td>4</td>
+        </tr>
+    </tbody>
+</table>
+<h3>Q2. Recreate the following form using HTML:</h3>
+<form>
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name"><br><br>
+
+    Sex:
+    <input type="radio" id="male" name="sex" value="male">
+    <label for="male">Male</label>
+
+    <input type="radio" id="female" name="sex" value="female">
+    <label for="female">Female</label><br><br>
+
+    <label for="country">Country:</label>
+    <select id="country" name="country">
+        <option>Select an option</option>
+        <option>India</option>
+        <option>Nepal</option>
+        <option>USA</option>
+        <option>Canada</option>
+    </select><br><br>
+
+    <label for="message">Message:</label><br>
+    <textarea id="message" name="message" rows="4" cols="40"></textarea><br><br>
+
+    <input type="checkbox" id="subscribe" name="subscribe">
+    <label for="subscribe">Subscribe!</label><br><br>
+
+    <input type="submit" value="Submit">
+</form>
+<h3>Q3. Recreate the following form using HTML:</h3>
+<h4>Feedback Form</h4>
+<form>
+    <label for="fname">Name:</label>
+    <input type="text" id="fname" name="fname" placeholder="Write your name"><br><br>
+
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" placeholder="Write your email"><br><br>
+
+    <label for="feedback">Message:</label><br>
+    <textarea id="feedback" name="feedback" rows="4" cols="40"></textarea><br><br>
+
+    Rate us out of 5:<br>
+    <input type="radio" name="rating" value="1"> 1<br>
+    <input type="radio" name="rating" value="2"> 2<br>
+    <input type="radio" name="rating" value="3"> 3<br>
+    <input type="radio" name="rating" value="4"> 4<br>
+    <input type="radio" name="rating" value="5"> 5<br><br>
+
+    <button type="submit">Send your message!</button>
+</form>
+    
+</body>
+</html>
