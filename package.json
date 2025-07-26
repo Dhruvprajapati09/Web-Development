@@ -1,0 +1,20 @@
+{
+  "name": "web-development",
+  "version": "1.0.0",
+  "main": "currency.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dhruvprajapati09/Web-Development.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Dhruvprajapati09/Web-Development/issues"
+  },
+  "homepage": "https://github.com/Dhruvprajapati09/Web-Development#readme",
+  "description": ""
+}

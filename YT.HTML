@@ -1,0 +1,453 @@
+/*
+This multi-file block implements video uploading using AWS S3.
+
+**IMPORTANT SETUP:**
+
+1.  **Backend Dependencies:** In the `server` directory, run:
+    `npm install aws-sdk multer`
+
+2.  **AWS S3 Setup:**
+    * Create an AWS account if you don't have one.
+    * Create a new S3 bucket. Make sure to **uncheck "Block all public access"** and add a bucket policy to allow public reads, so videos can be viewed.
+    * Create an IAM user with programmatic access and attach a policy that gives it `s3:GetObject` and `s3:PutObject` permissions for your bucket.
+    * Note your `Access Key ID`, `Secret Access Key`, and `S3 Bucket Name`.
+
+3.  **Backend Environment:** Update your `server/.env` file with your AWS credentials:
+    ```
+    MONGO_URI=...
+    JWT_SECRET=...
+    PORT=...
+    CORS_ORIGIN=...
+    
+    AWS_ACCESS_KEY_ID=YOUR_AWS_ACCESS_KEY
+    AWS_SECRET_ACCESS_KEY=YOUR_AWS_SECRET_KEY
+    AWS_S3_BUCKET_NAME=your-s3-bucket-name
+    AWS_S3_REGION=your-s3-bucket-region (e.g., us-east-1)
+    ```
+
+4.  **Frontend:** No new dependencies are needed.
+
+5.  **Restart:** Restart both your backend and frontend servers.
+*/
+
+// =============================================================================
+// BACKEND FILES
+// =============================================================================
+
+// FILE: server/package.json (For reference)
+{
+  "name": "youtube-clone-server",
+  "version": "1.0.0",
+  "description": "Backend for the MERN YouTube Clone",
+  "main": "index.js",
+  "type": "module",
+  "scripts": { "start": "node index.js", "dev": "nodemon index.js" },
+  "dependencies": {
+    "aws-sdk": "^2.1517.0", // <-- ADDED
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1" // <-- ADDED
+  },
+  "devDependencies": { "nodemon": "^3.0.2" }
+}
+
+// -----------------------------------------------------------------------------
+
+// FILE: server/utils/s3Upload.js
+// CREATE this file. A helper utility for uploading files to S3.
+
+import S3 from 'aws-sdk/clients/s3.js';
+import fs from 'fs';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const bucketName = process.env.AWS_S3_BUCKET_NAME;
+const region = process.env.AWS_S3_REGION;
+const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+
+const s3 = new S3({
+  region,
+  accessKeyId,
+  secretAccessKey
+});
+
+// uploads a file to s3
+export function uploadFile(file) {
+  const uploadParams = {
+    Bucket: bucketName,
+    Body: file.buffer,
+    Key: `${Date.now()}-${file.originalname}`
+  };
+
+  return s3.upload(uploadParams).promise();
+}
+
+
+// -----------------------------------------------------------------------------
+
+// FILE: server/middlewares/multer.js
+// CREATE this file. Configures Multer for handling file uploads.
+
+import multer from 'multer';
+
+// We use memoryStorage to temporarily hold the file before uploading to S3
+const storage = multer.memoryStorage();
+
+const fileFilter = (req, file, cb) => {
+  // Allow images and videos only
+  if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Not an image or video file!'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 1024 * 1024 * 50 // 50 MB limit
+  }
+});
+
+export default upload;
+
+
+// -----------------------------------------------------------------------------
+
+// FILE: server/controllers/videoController.js (Updated)
+// Added the `uploadVideo` function.
+
+import Video from '../models/videoModel.js';
+import { uploadFile } from '../utils/s3Upload.js';
+
+// ... (existing functions: getAllVideos, seedVideos, getVideoById, likeVideo, dislikeVideo)
+const getAllVideos = async (req, res) => { /* ... */ };
+const seedVideos = async (req, res) => { /* ... */ };
+const getVideoById = async (req, res) => { /* ... */ };
+const likeVideo = async (req, res) => { /* ... */ };
+const dislikeVideo = async (req, res) => { /* ... */ };
+
+
+// @desc    Upload a video
+// @route   POST /api/videos/upload
+// @access  Private
+const uploadVideo = async (req, res) => {
+  try {
+    const { title, description, tags } = req.body;
+    const videoFile = req.files.video[0];
+    const thumbnailFile = req.files.thumbnail[0];
+    
+    if (!title || !description || !videoFile || !thumbnailFile) {
+        return res.status(400).json({ message: 'All fields including video and thumbnail are required.' });
+    }
+
+    // Upload to S3
+    const videoUploadResult = await uploadFile(videoFile);
+    const thumbnailUploadResult = await uploadFile(thumbnailFile);
+
+    // Create new video document in MongoDB
+    const newVideo = await Video.create({
+      owner: req.user._id,
+      title,
+      description,
+      tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+      videoUrl: videoUploadResult.Location,
+      thumbnailUrl: thumbnailUploadResult.Location,
+      // duration would ideally be extracted from the video file using a library like ffprobe
+      duration: 0, 
+    });
+
+    res.status(201).json(newVideo);
+
+  } catch (error) {
+    console.error('Upload Error:', error);
+    res.status(500).json({ message: 'Server Error during upload: ' + error.message });
+  }
+};
+
+export { getAllVideos, seedVideos, getVideoById, likeVideo, dislikeVideo, uploadVideo };
+
+
+// -----------------------------------------------------------------------------
+
+// FILE: server/routes/videoRoutes.js (Updated)
+// Added the new upload route with multer middleware.
+
+import express from 'express';
+const router = express.Router();
+import { getAllVideos, seedVideos, getVideoById, likeVideo, dislikeVideo, uploadVideo } from '../controllers/videoController.js';
+import { protect } from '../middlewares/authMiddleware.js';
+import upload from '../middlewares/multer.js';
+
+// Public routes
+router.get('/', getAllVideos);
+router.get('/seed', seedVideos);
+router.get('/:id', getVideoById);
+
+// Protected routes
+router.put('/:id/like', protect, likeVideo);
+router.put('/:id/dislike', protect, dislikeVideo);
+
+// Upload route
+router.post(
+  '/upload', 
+  protect, 
+  upload.fields([{ name: 'video', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }]), 
+  uploadVideo
+);
+
+export default router;
+
+
+// =============================================================================
+// FRONTEND FILES
+// =============================================================================
+
+// FILE: client/src/components/common/ProtectedRoute.jsx
+// CREATE this file. A component to protect routes from unauthenticated access.
+
+import React, { useContext } from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import AuthContext from '../../context/AuthContext';
+import Spinner from './Spinner';
+
+const ProtectedRoute = () => {
+  const { user, loading } = useContext(AuthContext);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen"><Spinner /></div>;
+  }
+
+  return user ? <Outlet /> : <Navigate to="/login" replace />;
+};
+
+export default ProtectedRoute;
+
+
+// -----------------------------------------------------------------------------
+
+// FILE: client/src/pages/UploadPage.jsx
+// CREATE this file. The page for uploading new videos.
+
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import AuthContext from '../context/AuthContext';
+import { UploadCloud } from 'lucide-react';
+
+const UploadPage = () => {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [tags, setTags] = useState('');
+    const [videoFile, setVideoFile] = useState(null);
+    const [thumbnailFile, setThumbnailFile] = useState(null);
+    const [error, setError] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
+    
+    const navigate = useNavigate();
+    const { user } = useContext(AuthContext);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!videoFile || !thumbnailFile) {
+            setError('Please select both a video and a thumbnail file.');
+            return;
+        }
+        
+        setError('');
+        setIsUploading(true);
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('tags', tags);
+        formData.append('video', videoFile);
+        formData.append('thumbnail', thumbnailFile);
+
+        try {
+            const { data } = await axios.post('/api/videos/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            // On success, navigate to the new video's watch page
+            navigate(`/watch/${data._id}`);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Upload failed. Please try again.');
+            console.error(err);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    return (
+        <div className="max-w-4xl mx-auto p-4 sm:p-8">
+            <h1 className="text-3xl font-bold mb-6">Upload Video</h1>
+            <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-900 p-8 rounded-lg shadow-md">
+                {error && <p className="text-red-500 bg-red-100 dark:bg-red-900/30 p-3 rounded-md">{error}</p>}
+                
+                <div>
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+                    <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md" />
+                </div>
+                
+                <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                    <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required rows="4" className="mt-1 block w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
+                </div>
+
+                <div>
+                    <label htmlFor="tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tags (comma-separated)</label>
+                    <input type="text" id="tags" value={tags} onChange={(e) => setTags(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Video File</label>
+                        <input type="file" accept="video/*" onChange={(e) => setVideoFile(e.target.files[0])} required className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Thumbnail Image</label>
+                        <input type="file" accept="image/*" onChange={(e) => setThumbnailFile(e.target.files[0])} required className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" disabled={isUploading} className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50">
+                        <UploadCloud className="mr-2" size={20} />
+                        {isUploading ? 'Uploading...' : 'Upload Video'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
+export default UploadPage;
+
+
+// -----------------------------------------------------------------------------
+
+// FILE: client/src/components/layout/Navbar.jsx (Updated)
+// The upload video icon now links to the upload page.
+
+import React, { useContext } from 'react';
+import { Link } from 'react-router-dom';
+import { Menu, Youtube, Search, Video, Bell, UserCircle, LogOut } from 'lucide-react';
+import AuthContext from '../../context/AuthContext';
+
+const Navbar = ({ toggleSidebar }) => {
+  const { user, logout, loading } = useContext(AuthContext);
+
+  // ... (rest of the component is the same, only the right section is updated)
+
+  return (
+    <nav className="bg-white dark:bg-gray-900 shadow-sm px-4 py-2 flex justify-between items-center sticky top-0 z-50">
+      {/* ... Left and Center sections ... */}
+      <div className="flex items-center space-x-4">
+        <button onClick={toggleSidebar} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+          <Menu size={24} />
+        </button>
+        <Link to="/" className="flex items-center space-x-2">
+          <Youtube size={32} className="text-red-600" />
+          <span className="text-xl font-semibold hidden sm:block">YouTube</span>
+        </Link>
+      </div>
+      <div className="flex-1 max-w-lg mx-4 hidden sm:flex">
+        <input type="text" placeholder="Search" className="w-full px-4 py-2 border rounded-l-full"/>
+        <button className="px-4 py-2 border-t border-b border-r rounded-r-full"><Search size={24} /></button>
+      </div>
+
+      {/* Right Section - Updated */}
+      <div className="flex items-center space-x-2 sm:space-x-4">
+        {!loading && (
+          <>
+            {user ? (
+              <>
+                <Link to="/upload" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                  <Video size={24} className="text-gray-800 dark:text-white" />
+                </Link>
+                <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                  <Bell size={24} className="text-gray-800 dark:text-white" />
+                </button>
+                <div className="flex items-center space-x-2">
+                   <img src={user.profilePicture || `https://ui-avatars.com/api/?name=${user.username}&background=random`} alt={user.username} className="w-8 h-8 rounded-full" />
+                   <span className="font-semibold hidden md:block">{user.username}</span>
+                </div>
+                <button onClick={logout} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                  <LogOut size={24} className="text-gray-800 dark:text-white" />
+                </button>
+              </>
+            ) : (
+              <Link to="/login">
+                <button className="flex items-center space-x-2 border border-blue-500 text-blue-500 px-3 py-1.5 rounded-full hover:bg-blue-500 hover:text-white">
+                  <UserCircle size={24} />
+                  <span className="font-medium">Sign In</span>
+                </button>
+              </Link>
+            )}
+          </>
+        )}
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;
+
+
+// -----------------------------------------------------------------------------
+
+// FILE: client/src/App.jsx (Updated)
+// The upload route is now protected.
+
+import React, { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './components/layout/Navbar';
+import Sidebar from './components/layout/Sidebar';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import WatchPage from './pages/WatchPage';
+import UploadPage from './pages/UploadPage'; // <-- IMPORT
+import ProtectedRoute from './components/common/ProtectedRoute'; // <-- IMPORT
+
+function App() {
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 min-h-screen">
+      <Navbar toggleSidebar={toggleSidebar} />
+      <div className="flex">
+        <Sidebar isOpen={isSidebarOpen} />
+        <main className="flex-1 overflow-y-auto">
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/watch/:videoId" element={<WatchPage />} />
+
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/upload" element={<UploadPage />} />
+              {/* Add other protected routes here, e.g., /history, /studio */}
+            </Route>
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default App;
