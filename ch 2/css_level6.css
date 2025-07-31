@@ -1,0 +1,115 @@
+/* Grid Concepts */
+.grid-container {
+  display: grid; /* What is Grid */
+  grid-template-columns: repeat(3, 1fr); /* Grid Template */
+  grid-template-rows: 100px 100px; /* Grid Rows */
+  grid-gap: 10px; /* Grid Gaps */
+  padding: 10px;
+  background-color: #f0f0f0;
+}
+
+.grid-item {
+  background-color: #4caf50;
+  color: white;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid black;
+}
+
+.item1 {
+  grid-column: span 2; /* Grid Columns */
+}
+
+.item2 {
+  grid-row: span 2;
+}
+
+/* Grid Properties - aligning items */
+.grid-container {
+  align-items: center;
+  justify-items: center;
+}
+
+/* Animation */
+@keyframes bounce {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-30px); }
+  100% { transform: translateY(0); }
+}
+
+.animation-box {
+  width: 100px;
+  height: 100px;
+  background-color: deepskyblue;
+  margin: 40px auto;
+  text-align: center;
+  font-size: 36px;
+  animation: bounce 2s infinite; /* Animation in CSS */
+}
+
+/* Animation Shorthand & % */
+.animation-box {
+  animation: bounce 1.5s ease-in-out infinite;
+}
+
+/* Media Queries */
+.media-section {
+  padding: 20px;
+  background-color: lightcoral;
+  text-align: center;
+  color: white;
+}
+
+@media (max-width: 600px) {
+  .media-section {
+    background-color: lightskyblue;
+  }
+}
+
+/* Media Queries (Orientation) */
+@media (orientation: landscape) {
+  body {
+    background-color: #f5f5dc;
+  }
+}
+
+/* z-index */
+.z-container {
+  position: relative;
+  height: 200px;
+  margin-top: 30px;
+}
+
+.z-box {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  font-size: 20px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.z1 {
+  background-color: teal;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.z2 {
+  background-color: crimson;
+  top: 40px;
+  left: 40px;
+  z-index: 2;
+}
+
+/* Heading Styling */
+.heading {
+  text-align: center;
+  margin: 30px 0;
+  font-size: 32px;
+}
