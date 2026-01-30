@@ -1,0 +1,51 @@
+/* Part A (Selectors) */
+
+/* Q1: ID selector for h1 */
+#mainTopic {
+  color: blue;
+}
+
+/* Q2: Universal selector to center align all text */
+* {
+  text-align: center;
+}
+
+/* Q3: Change font of all headings to Georgia */
+h1, h2, h3, h4, h5, h6 {
+  font-family: Georgia, serif;
+}
+
+/* Q4: Set paragraph styles without using 'p' selector */
+.para {
+  color: white;
+  background-color: cornflowerblue;
+}
+
+/* Q5: Select all buttons inside div */
+div button {
+  background-color: purple;
+  color: azure;
+}
+
+/* Part B (Pseudo Classes & Elements) */
+
+/* Q6: Hover effect on button */
+button:hover {
+  background-color: yellow;
+  color: blue;
+}
+
+/* Q7: Odd paragraphs to yellow */
+p:nth-of-type(odd) {
+  color: yellow;
+}
+
+/* Q8: First letter of h1 to red */
+h1::first-letter {
+  color: red;
+}
+
+/* Q9: Checkbox checked label color change */
+#yes:checked + label {
+  color: darkgreen;
+}

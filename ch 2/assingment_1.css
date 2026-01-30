@@ -1,0 +1,39 @@
+/* Q2: Set poem text color to brown and center text */
+.poem {
+    color: #A52A2A; /* Brown */
+    text-align: center;
+    font-family: Georgia, serif; /* Q5: Change font */
+    line-height: 30px; /* Q9: Line height */
+}
+
+/* Q3: Center align all headings */
+.heading, .poet-name {
+    text-align: center;
+}
+
+/* Q4: Poet's name in black */
+.poet-name {
+    color: black;
+}
+
+/* Q6: Wikipedia link green and no underline */
+.wiki-link {
+    color: rgb(0, 128, 0);
+    text-decoration: none;
+}
+
+/* Q7: Button white bg and blueviolet text */
+.comment-btn {
+    background-color: white;
+    color: blueviolet;
+}
+
+/* Q8: Textarea font color to black */
+.feedback {
+    color: #000000;
+}
+
+/* Q10: Underline only the word "Ozymandias" */
+.underline {
+    text-decoration: underline;
+}

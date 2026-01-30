@@ -1,0 +1,99 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background: #f2f2f2;
+}
+
+h1 {
+  text-align: center;
+}
+
+.flex-container {
+  display: flex;
+  background: #fff;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  gap: 10px;
+}
+
+/* Flex Direction */
+.row {
+  flex-direction: row;
+}
+
+/* Justify Content */
+.justify-center {
+  justify-content: center;
+}
+
+/* Flex Wrap */
+.wrap {
+  flex-wrap: wrap;
+}
+
+/* Align Items */
+.align-items {
+  align-items: flex-end;
+  height: 150px;
+}
+
+/* Align Content */
+.align-content {
+  flex-wrap: wrap;
+  align-content: space-between;
+  height: 200px;
+}
+
+/* Align Self */
+.align-self-demo {
+  height: 150px;
+  align-items: flex-start;
+}
+
+.self-center {
+  align-self: center;
+}
+
+/* Flex Sizing */
+.sizing .flex-1 {
+  flex: 1;
+}
+
+.sizing .flex-2 {
+  flex: 2;
+}
+
+/* Flex Shorthand */
+.shorthand .short1 {
+  flex: 1 1 100px;
+}
+
+.shorthand .short2 {
+  flex: 2 1 100px;
+}
+
+.shorthand .short3 {
+  flex: 1 2 100px;
+}
+
+/* Box Styles */
+.box {
+  background: #4CAF50;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.large {
+  width: 150px;
+}
+
+.tall {
+  height: 100px;
+}
+
+.line {
+  width: 30%;
+}
