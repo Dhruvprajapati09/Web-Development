@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "@faker-js/faker": "^10.3.0",
+    "mysql2": "^3.16.3"
+  },
+  "name": "backend-part-5(node-with-sql)",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
