@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Post</title>
+</head>
+<body>
+
+<h2>Edit Post</h2>
+
+<p>ID: <%= post.id %></p>
+<p>User: <%= post.username %></p>
+
+<form method="POST" action="/posts/<%= post.id %>?_method=PATCH">
+  <textarea name="content" rows="10" cols="40"><%= post.content %></textarea>
+  <br>
+  <button>Update</button>
+</form>
+
+</body>
+</html>
